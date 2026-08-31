@@ -1,0 +1,328 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Comfortaa', cursive, sans-serif;
+    background: linear-gradient(135deg, #ffe6e9 0%, #ffe3ee 100%);
+    color: #4a4a4a;
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+/* Кнопка Музыки */
+.audio-control {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    width: 45px;
+    height: 45px;
+    background: #ff4081;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    z-index: 1000;
+}
+
+/* Навигационная панель */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
+    padding: 10px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+    margin-left: 50px;
+}
+
+.nav-btn {
+    border: none;
+    background: transparent;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    color: #777;
+    transition: all 0.3s;
+}
+
+.nav-btn.active, .nav-btn:hover {
+    background: #ffe3ee;
+    color: #e91e63;
+}
+
+.points-badge {
+    background: #e91e63;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+/* Контейнер */
+.container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 0 15px;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Карточки */
+.hero-card, .wishlist-card, .calendar-card, .modal-card, .game-screen-card {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.timer-container {
+    margin-top: 15px;
+    font-size: 1.2rem;
+    color: #e91e63;
+}
+
+/* Wishlist */
+.wish-input-group {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.wish-input-group input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-family: inherit;
+}
+
+.wish-input-group button, .edit-btn, .save-btn, .coupon-btn {
+    background: #e91e63;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+}
+
+.wishlist-list { list-style: none; text-align: left; }
+.wish-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+.delete-btn { background: none; border: none; color: #ff4d4d; cursor: pointer; }
+
+/* Календарь */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+}
+
+.calendar-header button {
+    border: none;
+    background: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #e91e63;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #f9f9f9;
+    cursor: pointer;
+}
+
+.calendar-day.has-event {
+    background: #ffe3ee;
+    color: #e91e63;
+    font-weight: bold;
+    border: 1px solid #e91e63;
+}
+
+/* Игры и Квиз */
+.games-grid, .coupons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.game-card, .coupon-item {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.game-limit-tag {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #777;
+}
+
+.back-btn-styled {
+    background: #ffe3ee;
+    color: #e91e63;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.quiz-container { margin-top: 10px; }
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.quiz-btn {
+    background: #fff0f5;
+    border: 2px solid #ffb6c1;
+    padding: 12px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #4a4a4a;
+    font-weight: bold;
+}
+
+.quiz-btn:hover {
+    background: #e91e63;
+    color: white;
+    border-color: #e91e63;
+}
+
+.game-hud {
+    display: flex;
+    justify-content: space-around;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #e91e63;
+}
+
+.game-area {
+    width: 100%;
+    height: 380px;
+    background: #fff0f5;
+    position: relative;
+    overflow: hidden;
+    border-radius: 15px;
+    border: 2px dashed #ffb6c1;
+}
+
+.basket { position: absolute; bottom: 10px; font-size: 35px; }
+.falling-item { position: absolute; font-size: 26px; }
+
+/* Купоны */
+.coupon-item.locked { opacity: 0.5; }
+.coupon-cost {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ffe3ee;
+    color: #e91e63;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Модальное окно */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-card { position: relative; width: 90%; max-width: 400px; }
+.close-btn { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; }
+.modal-card textarea {
+    width: 100%; height: 80px; margin-top: 10px; padding: 8px;
+    border-radius: 8px; border: 1px solid #ccc; font-family: inherit;
+}
+
+/* ==========================================
+   ЭКРАН АВТОРИЗАЦИИ
+   ========================================== */
+.login-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(135deg, #ffe6e9 0%, #ffe3ee 100%);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000;
+}
+
+.login-card {
+    background: white; padding: 40px; border-radius: 20px;
+    text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    max-width: 400px; width: 90%;
+}
+
+.google-btn {
+    background: #4285F4; color: white; border: none;
+    padding: 12px 20px; border-radius: 10px; font-size: 1rem;
+    cursor: pointer; margin-top: 20px; font-family: inherit; font-weight: bold;
+    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+    transition: background 0.3s;
+}
+
+.google-btn:hover { background: #357ae8; }

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Наше Пространство Любви</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+    <!-- Экран авторизации -->
+    <div id="login-screen" class="login-overlay">
+        <div class="login-card">
+            <h2>Вход в наше пространство ❤️</h2>
+            <p>Доступ только для своих. Авторизуйся, чтобы продолжить.</p>
+            <button class="google-btn" onclick="loginWithGoogle()">
+                <i class="fa-brands fa-google"></i> Войти через Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Основной контент  -->
+    <div id="app-content" style="display: none;">
+        <!-- Управление музыкой -->
+        <div class="audio-control" onclick="toggleMusic()">
+            <i id="music-icon" class="fa-solid fa-music"></i>
+            <audio id="bg-music" src="assets/music.mp3" loop></audio>
+        </div>
+
+        <!-- Шапка сайта -->
+        <header class="navbar">
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="showTab('main')"><i class="fa-solid fa-house"></i> Главная</button>
+                <button class="nav-btn" onclick="showTab('calendar')"><i class="fa-solid fa-calendar-days"></i> Календарь</button>
+                <button class="nav-btn" onclick="showTab('games')"><i class="fa-solid fa-gamepad"></i> Игры</button>
+                <button class="nav-btn" onclick="showTab('coupons')"><i class="fa-solid fa-ticket"></i> Купоны</button>
+            </div>
+            <div class="points-badge">
+                <i class="fa-solid fa-heart"></i> Баланс: <span id="pts-val">0</span> pts
+            </div>
+        </header>
+
+        <main class="container">
+            <!-- 1. ГЛАВНАЯ СТРАНИЦА -->
+            <section id="main-tab" class="tab-content active">
+                <div class="hero-card">
+                    <h1>Наша История Любви ❤️</h1>
+                    <div id="timer" class="timer-container"></div>
+                </div>
+
+                <div class="wishlist-card">
+                    <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Список Желаний (Wishlist)</h2>
+                    <div class="wish-input-group">
+                        <input type="text" id="wish-input" placeholder="Напиши желание...">
+                        <button onclick="addWish()">Добавить</button>
+                    </div>
+                    <ul id="wishlist-items" class="wishlist-list"></ul>
+                </div>
+            </section>
+
+            <!-- 2. КАЛЕНДАРЬ -->
+            <section id="calendar-tab" class="tab-content">
+                <div class="calendar-card">
+                    <h2>Календарь Воспоминаний</h2>
+                    <p class="subtitle">Каждое добавленное фото приносит <b>+50 pts</b>!</p>
+                    
+                    <div class="calendar-header">
+                        <button onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h3 id="current-month-year">Месяц Год</h3>
+                        <button onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+
+                    <div class="calendar-weekdays">
+                        <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+                    </div>
+                    
+                    <div id="calendar-days" class="calendar-grid"></div>
+                </div>
+            </section>
+
+            <!-- 3. ИГРЫ -->
+            <section id="games-tab" class="tab-content">
+                <div id="games-menu" class="games-grid">
+                    <div class="game-card" onclick="startQuiz()">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <h3>Викторина Отношений</h3>
+                        <p>Проверь, насколько хорошо ты помнишь наши моменты!</p>
+                        <span id="quiz-status" class="game-limit-tag"></span>
+                    </div>
+                    <div class="game-card" onclick="startLoveCatch()">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <h3>Ловец Сердечек</h3>
+                        <p>Лови сердца 1 минуту и зарабатывай очки!</p>
+                        <span id="catch-status" class="game-limit-tag"></span>
+                    </div>
+                </div>
+
+                <!-- Экран Квиза -->
+                <div id="quiz-screen" class="game-screen-card" style="display:none;">
+                    <button class="back-btn-styled" onclick="backToGames()"><i class="fa-solid fa-arrow-left"></i> Назад</button>
+                    <div id="quiz-box" class="quiz-container">
+                        <h3 id="quiz-question">Вопрос...</h3>
+                        <div id="quiz-options" class="quiz-options"></div>
+                    </div>
+                </div>
+
+                <!-- Экран Ловца Сердечек -->
+                <div id="love-catch-screen" class="game-screen-card" style="display:none;">
+                    <button class="back-btn-styled" onclick="stopLoveCatch()"><i class="fa-solid fa-arrow-left"></i> Выйти</button>
+                    <div class="game-hud">
+                        <div>⏳ Время: <span id="game-timer">60</span>с</div>
+                        <div>❤️ Очки: <span id="game-score">0</span></div>
+                    </div>
+                    <div id="game-area" class="game-area">
+                        <div id="basket" class="basket">🧺</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. КУПОНЫ -->
+            <section id="coupons-tab" class="tab-content">
+                <h2>Магазин Любовных Купонов</h2>
+                <div id="coupons-container" class="coupons-grid"></div>
+            </section>
+        </main>
+
+        <!-- Модальное окно Календаря -->
+        <div id="event-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-card">
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+                <h3 id="modal-date-title">Дата</h3>
+                
+                <div id="modal-view-mode">
+                    <p id="modal-note-display">Заметок нет.</p>
+                    <div id="modal-photos-display"></div>
+                    <button class="edit-btn" onclick="openEditMode()" style="margin-top:15px;"><i class="fa-solid fa-plus"></i> Добавить фото / заметку</button>
+                </div>
+
+                <div id="modal-edit-mode" style="display:none;">
+                    <textarea id="modal-note-input" placeholder="Напишите ваше воспоминание..."></textarea>
+                    <label style="display:block; margin: 10px 0 5px; font-weight:bold; font-size: 0.9rem;">Выберите фото с устройства:</label>
+                    <input type="file" id="modal-file-input" accept="image/*" style="width:100%; margin-bottom:10px;">
+                    <button class="save-btn" onclick="saveEventData()" style="width:100%;">Сохранить (+50 pts)</button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- Конец app-content -->
+
+    <script src="app.js"></script>
+</body>
+</html>
