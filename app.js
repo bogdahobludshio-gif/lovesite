@@ -359,7 +359,10 @@ const couponsData = [
     { id: 3, title: "Ресторан", cost: 2500, icon: "fa-utensils" },
     { id: 4, title: "Суши", cost: 3000, icon: "fa-bowl-food" },
     { id: 5, title: "Пицца", cost: 1000, icon: "fa-pizza-slice" },
-    { id: 6, title: "Уборка дома", cost: 1200, icon: "fa-broom" }
+    { id: 6, title: "Уборка дома", cost: 1200, icon: "fa-broom" },
+    { id: 7, title: "Нон-стоп", cost: 400, icon: "fa-bolt" },
+    { id: 8, title: "Шоколадка", cost: 600, icon: "fa-cookie-bite" },
+    { id: 9, title: "100 грн", cost: 1000, icon: "fa-money-bill-wave" }
 ];
 
 window.renderCoupons = function() {
@@ -368,10 +371,9 @@ window.renderCoupons = function() {
     
     container.innerHTML = "";
     
-    // Загружаем данные об активациях из Firebase, чтобы проверить таймер кулдауна (2 дня)
     db.ref(`${COUPLE_ID}/coupons/active`).once('value').then((snapshot) => {
         const activeCoupons = snapshot.val() || {};
-        const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000; // 2 дня в миллисекундах
+        const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
         const now = Date.now();
 
         couponsData.forEach(c => {
@@ -395,7 +397,6 @@ window.renderCoupons = function() {
                         cooldownText = `Обновится через ${remainingHours} ч.`;
                     }
                 } else {
-                    // Время вышло, удаляем устаревшую запись из БД, купон снова доступен
                     db.ref(`${COUPLE_ID}/coupons/active/${c.id}`).remove();
                 }
             }
@@ -428,7 +429,6 @@ window.renderCoupons = function() {
 window.activateCoupon = function(id, cost) {
     if (userPoints >= cost) {
         try {
-            // Сохраняем время активации для отсчета 2 дней
             db.ref(`${COUPLE_ID}/coupons/active/${id}`).set({
                 activatedAt: Date.now()
             });
@@ -440,7 +440,6 @@ window.activateCoupon = function(id, cost) {
         alert("Купон успешно активирован! Он обновится через 2 дня.");
         renderCoupons();
 
-        // Отправка уведомления в Telegram
         const activatedCoupon = couponsData.find(c => c.id === id);
         if (activatedCoupon) {
             const botToken = "ВСТАВЬ_СЮДА_ТОКЕН_ОТ_BOTFATHER";
