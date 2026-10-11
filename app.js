@@ -19,7 +19,7 @@ const db = firebase.database();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// Уникальный ID пары (должен совпадать с тем, что в правилах Firebase)
+// Уникальный ID вашей пары (должен совпадать с тем, что в правилах Firebase)
 const COUPLE_ID = "secret_love_123";
 
 let userPoints = 0;
@@ -35,7 +35,7 @@ auth.onAuthStateChanged((user) => {
         document.getElementById('app-content').style.display = 'block';
         console.log("Авторизован как:", user.email);
 
-        // Загрузка очков
+        // Загружаем очки только после успешного входа
         db.ref(`${COUPLE_ID}/score/points`).on('value', (snapshot) => {
             userPoints = snapshot.val() !== null ? snapshot.val() : 0;
             const ptsElement = document.getElementById('pts-val');
@@ -351,16 +351,15 @@ window.stopLoveCatch = function() {
 };
 
 // ==========================================
-// 6. КУПОНЫ И TELEGRAM
+// 6. КУПОНЫ, ЦЕНЫ И 2-ДНЕВНЫЙ КУЛДАУН + TELEGRAM
 // ==========================================
 const couponsData = [
-    { id: 1, title: "Массаж", cost: 200, icon: "fa-spa" },
-    { id: 2, title: "Кока-Кола", cost: 100, icon: "fa-bottle-droplet" },
-    { id: 3, title: "Ресторан", cost: 800, icon: "fa-utensils" },
-    { id: 4, title: "Суши", cost: 500, icon: "fa-bowl-food" },
-    { id: 5, title: "1 Желание", cost: 1500, icon: "fa-wand-magic-sparkles" },
-    { id: 6, title: "Пицца", cost: 400, icon: "fa-pizza-slice" },
-    { id: 7, title: "Уборка дома", cost: 600, icon: "fa-broom" }
+    { id: 1, title: "Массаж", cost: 500, icon: "fa-spa" },
+    { id: 2, title: "Кола", cost: 800, icon: "fa-bottle-droplet" },
+    { id: 3, title: "Ресторан", cost: 2500, icon: "fa-utensils" },
+    { id: 4, title: "Суши", cost: 3000, icon: "fa-bowl-food" },
+    { id: 5, title: "Пицца", cost: 1000, icon: "fa-pizza-slice" },
+    { id: 6, title: "Уборка дома", cost: 1200, icon: "fa-broom" }
 ];
 
 window.renderCoupons = function() {
@@ -369,69 +368,83 @@ window.renderCoupons = function() {
     
     container.innerHTML = "";
     
-    couponsData.forEach(c => {
-        const isLocked = userPoints < c.cost;
-        
-        const item = document.createElement('div');
-        item.className = `coupon-item ${isLocked ? 'locked' : ''}`;
-        item.id = `coupon-card-${c.id}`;
-        item.innerHTML = `
-            <div class="coupon-cost">${c.cost} pts</div>
-            <i class="fa-solid ${c.icon}" style="font-size:35px; color:#e91e63; margin:10px 0;"></i>
-            <h4>${c.title}</h4>
-            <button class="coupon-btn" id="btn-coupon-${c.id}" ${isLocked ? 'disabled' : ''}>
-                Применить купон
-            </button>
-        `;
-        
-        if (!isLocked) {
-            item.querySelector('button').onclick = () => activateCoupon(c.id, c.cost);
-        }
-        
-        container.appendChild(item);
-    });
+    // Загружаем данные об активациях из Firebase, чтобы проверить таймер кулдауна (2 дня)
+    db.ref(`${COUPLE_ID}/coupons/active`).once('value').then((snapshot) => {
+        const activeCoupons = snapshot.val() || {};
+        const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000; // 2 дня в миллисекундах
+        const now = Date.now();
 
-    try {
-        db.ref(`${COUPLE_ID}/coupons/active`).once('value').then((snapshot) => {
-            const activeCoupons = snapshot.val() || {};
-            
-            couponsData.forEach(c => {
-                if (activeCoupons[c.id]) {
-                    const btn = document.getElementById(`btn-coupon-${c.id}`);
-                    const card = document.getElementById(`coupon-card-${c.id}`);
-                    if (btn) {
-                        btn.innerText = "Активирован!";
-                        btn.disabled = true;
-                        btn.onclick = null;
+        couponsData.forEach(c => {
+            const activeRecord = activeCoupons[c.id];
+            let isCooldownActive = false;
+            let cooldownText = "";
+
+            if (activeRecord) {
+                const activatedAt = typeof activeRecord === 'object' ? activeRecord.activatedAt : 0;
+                const elapsed = now - activatedAt;
+
+                if (elapsed < TWO_DAYS_MS) {
+                    isCooldownActive = true;
+                    const remainingMs = TWO_DAYS_MS - elapsed;
+                    const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
+                    
+                    if (remainingHours > 24) {
+                        const days = Math.ceil(remainingHours / 24);
+                        cooldownText = `Обновится через ${days} дн.`;
+                    } else {
+                        cooldownText = `Обновится через ${remainingHours} ч.`;
                     }
-                    if (card) {
-                        card.classList.remove('locked');
-                    }
+                } else {
+                    // Время вышло, удаляем устаревшую запись из БД, купон снова доступен
+                    db.ref(`${COUPLE_ID}/coupons/active/${c.id}`).remove();
                 }
-            });
-        }).catch(e => console.warn("Firebase отклонил запрос, но купоны работают локально", e));
-    } catch(e) {
-        console.warn("Ошибка базы данных", e);
-    }
+            }
+
+            const isLockedByPoints = userPoints < c.cost;
+            const item = document.createElement('div');
+            item.className = `coupon-item ${isLockedByPoints || isCooldownActive ? 'locked' : ''}`;
+            item.id = `coupon-card-${c.id}`;
+            
+            item.innerHTML = `
+                <div class="coupon-cost">${c.cost} pts</div>
+                <i class="fa-solid ${c.icon}" style="font-size:35px; color:#e91e63; margin:10px 0;"></i>
+                <h4>${c.title}</h4>
+                <button class="coupon-btn" id="btn-coupon-${c.id}" ${isLockedByPoints || isCooldownActive ? 'disabled' : ''}>
+                    ${isCooldownActive ? cooldownText : 'Применить купон'}
+                </button>
+            `;
+            
+            if (!isLockedByPoints && !isCooldownActive) {
+                item.querySelector('button').onclick = () => activateCoupon(c.id, c.cost);
+            }
+            
+            container.appendChild(item);
+        });
+    }).catch(e => {
+        console.warn("Ошибка загрузки купонов из БД:", e);
+    });
 };
 
 window.activateCoupon = function(id, cost) {
     if (userPoints >= cost) {
         try {
-            db.ref(`${COUPLE_ID}/coupons/active/${id}`).set(true);
+            // Сохраняем время активации для отсчета 2 дней
+            db.ref(`${COUPLE_ID}/coupons/active/${id}`).set({
+                activatedAt: Date.now()
+            });
         } catch(e) {
             console.warn("Не удалось сохранить в БД", e);
         }
         
         updatePoints(-cost);
-        alert("Купон успешно активирован!");
+        alert("Купон успешно активирован! Он обновится через 2 дня.");
         renderCoupons();
 
         // Отправка уведомления в Telegram
         const activatedCoupon = couponsData.find(c => c.id === id);
         if (activatedCoupon) {
-            const botToken = "8824197800:AAF8pe2cdDOhxjs1K7f8xCgjkq9BsRwXXmE";
-            const chatId = "987858040";
+            const botToken = "ВСТАВЬ_СЮДА_ТОКЕН_ОТ_BOTFATHER";
+            const chatId = "ВСТАВЬ_СЮДА_ТВОЙ_CHAT_ID";
             const message = `❤️ Внимание! Девушка только что активировала купон: "${activatedCoupon.title}" за ${cost} pts!`;
             
             const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
