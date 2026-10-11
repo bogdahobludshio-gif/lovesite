@@ -19,7 +19,6 @@ const db = firebase.database();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// Уникальный ID вашей пары (должен совпадать с тем, что в правилах Firebase)
 const COUPLE_ID = "secret_love_123";
 
 let userPoints = 0;
@@ -28,14 +27,11 @@ let currentYear = new Date().getFullYear();
 let selectedDateString = "";
 const monthsRu = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 
-// Слушатель: проверяем, вошел ли пользователь
 auth.onAuthStateChanged((user) => {
     if (user) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'block';
-        console.log("Авторизован как:", user.email);
 
-        // Загружаем очки только после успешного входа
         db.ref(`${COUPLE_ID}/score/points`).on('value', (snapshot) => {
             userPoints = snapshot.val() !== null ? snapshot.val() : 0;
             const ptsElement = document.getElementById('pts-val');
@@ -50,7 +46,6 @@ auth.onAuthStateChanged((user) => {
 
 window.loginWithGoogle = function() {
     auth.signInWithPopup(provider).catch((error) => {
-        console.error("Ошибка входа:", error);
         alert("Не удалось войти: " + error.message);
     });
 };
@@ -61,7 +56,7 @@ function getTodayString() {
 }
 
 // ==========================================
-// 2. НАВИГАЦИЯ И БАЛАНС (ГЛОБАЛЬНЫЕ)
+// 2. НАВИГАЦИЯ И БАЛАНС
 // ==========================================
 window.showTab = function(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -99,7 +94,6 @@ window.updatePoints = function(amount) {
     const ptsElement = document.getElementById('pts-val');
     if (ptsElement) ptsElement.innerText = userPoints;
     db.ref(`${COUPLE_ID}/score/points`).set(userPoints);
-    renderCoupons();
 };
 
 // ==========================================
@@ -217,7 +211,7 @@ window.saveEventData = function() {
 };
 
 // ==========================================
-// 5. ИГРЫ И ЛИМИТИРОВАНИЕ
+// 5. ИГРЫ
 // ==========================================
 let quizPlayedToday = false;
 let catchPlayedToday = false;
@@ -351,7 +345,7 @@ window.stopLoveCatch = function() {
 };
 
 // ==========================================
-// 6. КУПОНЫ, ЦЕНЫ И 2-ДНЕВНЫЙ КУЛДАУН + TELEGRAM
+// 6. КУПОНЫ И УВЕДОМЛЕНИЯ TELEGRAM
 // ==========================================
 const couponsData = [
     { id: 1, title: "Массаж", cost: 500, icon: "fa-spa" },
@@ -369,6 +363,7 @@ window.renderCoupons = function() {
     const container = document.getElementById('coupons-container');
     if (!container) return;
     
+    // Полная очистка перед генерацией элементов
     container.innerHTML = "";
     
     db.ref(`${COUPLE_ID}/coupons/active`).once('value').then((snapshot) => {
@@ -421,41 +416,39 @@ window.renderCoupons = function() {
             
             container.appendChild(item);
         });
-    }).catch(e => {
-        console.warn("Ошибка загрузки купонов из БД:", e);
     });
 };
 
 window.activateCoupon = function(id, cost) {
     if (userPoints >= cost) {
-        try {
-            db.ref(`${COUPLE_ID}/coupons/active/${id}`).set({
-                activatedAt: Date.now()
-            });
-        } catch(e) {
-            console.warn("Не удалось сохранить в БД", e);
-        }
+        db.ref(`${COUPLE_ID}/coupons/active/${id}`).set({
+            activatedAt: Date.now()
+        });
         
         updatePoints(-cost);
         alert("Купон успешно активирован! Он обновится через 2 дня.");
-        renderCoupons();
 
+        // Уведомление в Telegram
         const activatedCoupon = couponsData.find(c => c.id === id);
         if (activatedCoupon) {
-            const botToken = "ВСТАВЬ_СЮДА_ТОКЕН_ОТ_BOTFATHER";
-            const chatId = "ВСТАВЬ_СЮДА_ТВОЙ_CHAT_ID";
+            // ⚠️ ВСТАВЬ СВОИ ДАННЫЕ ВМЕСТО СТРОК НИЖЕ ⚠️
+            const botToken = "8824197800:AAF8pe2cdDOhxjs1K7f8xCgjkq9BsRwXXmE";
+            const chatId = "987858040";
+
             const message = `❤️ Внимание! Девушка только что активировала купон: "${activatedCoupon.title}" за ${cost} pts!`;
-            
             const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
             
-            fetch(telegramUrl).catch(err => console.error("Ошибка отправки в TG:", err));
+            fetch(telegramUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.ok) {
+                        console.error("Ошибка Telegram API:", data.description);
+                    }
+                })
+                .catch(err => console.error("Ошибка отправки запроса в TG:", err));
         }
     }
 };
-
-document.addEventListener('DOMContentLoaded', () => {
-    renderCoupons();
-});
 
 // ==========================================
 // 7. WISHLIST
@@ -500,9 +493,7 @@ window.addWish = function() {
     
     try {
         db.ref(`${COUPLE_ID}/wishlist`).push({ text: text });
-    } catch(e) {
-        console.warn("Нет подключения к БД, сохранено локально.");
-    }
+    } catch(e) {}
 };
 
 window.deleteWish = function(key) {
@@ -524,5 +515,3 @@ try {
         }
     });
 } catch(e) {}
-
-document.addEventListener('DOMContentLoaded', renderWishlist);
