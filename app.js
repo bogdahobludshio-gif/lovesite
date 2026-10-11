@@ -363,13 +363,14 @@ window.renderCoupons = function() {
     const container = document.getElementById('coupons-container');
     if (!container) return;
     
-    // Полная очистка перед генерацией элементов
     container.innerHTML = "";
     
     db.ref(`${COUPLE_ID}/coupons/active`).once('value').then((snapshot) => {
         const activeCoupons = snapshot.val() || {};
         const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
         const now = Date.now();
+
+        container.innerHTML = "";
 
         couponsData.forEach(c => {
             const activeRecord = activeCoupons[c.id];
@@ -421,32 +422,24 @@ window.renderCoupons = function() {
 
 window.activateCoupon = function(id, cost) {
     if (userPoints >= cost) {
-        db.ref(`${COUPLE_ID}/coupons/active/${id}`).set({
-            activatedAt: Date.now()
-        });
-        
-        updatePoints(-cost);
-        alert("Купон успешно активирован! Он обновится через 2 дня.");
-
-        // Уведомление в Telegram
         const activatedCoupon = couponsData.find(c => c.id === id);
+        
         if (activatedCoupon) {
-            // ⚠️ ВСТАВЬ СВОИ ДАННЫЕ ВМЕСТО СТРОК НИЖЕ ⚠️
             const botToken = "8824197800:AAF8pe2cdDOhxjs1K7f8xCgjkq9BsRwXXmE";
             const chatId = "987858040";
 
             const message = `❤️ Внимание! Девушка только что активировала купон: "${activatedCoupon.title}" за ${cost} pts!`;
             const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
             
-            fetch(telegramUrl)
-                .then(res => res.json())
-                .then(data => {
-                    if (!data.ok) {
-                        console.error("Ошибка Telegram API:", data.description);
-                    }
-                })
-                .catch(err => console.error("Ошибка отправки запроса в TG:", err));
+            fetch(telegramUrl, { mode: 'no-cors' }).catch(err => console.error("TG error:", err));
         }
+
+        db.ref(`${COUPLE_ID}/coupons/active/${id}`).set({
+            activatedAt: Date.now()
+        });
+        
+        updatePoints(-cost);
+        alert("Купон успешно активирован! Он обновится через 2 дня.");
     }
 };
 
